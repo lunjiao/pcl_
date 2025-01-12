@@ -1,4 +1,7 @@
-#pragma once
+#ifndef IMUTRACKER_HPP
+#define IMUTRACKER_HPP
+
+
 #include<ImuBufferAndReading.hpp>
 #include<typedefine.hpp>
 #include<rclcpp/rclcpp.hpp>
@@ -11,7 +14,7 @@ ImuTracker(std::shared_ptr<rclcpp::Node> node);
 void imuCallback(const sensor_msgs::msg::Imu&imu);
 Matrix4f getTransform();
 //更新数据，数据从这里进来
-void addReading(const Time &t,const ImuReadingd&reading);
+void addReading(const Time &t,ImuReadingd&reading);
 //去重力
 Vectord removeGravity(const Vectord &acc,const Quaterniond &imuOrientation);
 //整合
@@ -49,3 +52,5 @@ double gravityFromZ;
 
 
 }
+
+#endif

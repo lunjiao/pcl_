@@ -3,6 +3,15 @@
 
 namespace icp_local{
 
+void TfPublisher::publishMap(){
+  sensor_msgs::msg::PointCloud2 msg;
+  pcl::toROSMsg(*mapCloud_,msg);
+  msg.header.frame_id="map";
+  msg.header.stamp=rclcpp::Clock().now();
+  mapPub_->publish(msg);
+  RCLCPP_INFO(node_->get_logger(),"66");
+}
+
 void TfPublisher::setGrid(){
   grid_.header.frame_id=fatherFrame_;
   grid_.header.stamp=node_->now();
@@ -14,14 +23,15 @@ void TfPublisher::setGrid(){
   grid_.info.origin.position.y=0.0;
   grid_.info.origin.position.z=0.0;
 }
-void TfPublisher::setMap(const PointCloud::Ptr &cloud){
-  PointCloud::Ptr cloud_1;
+using namespace std::chrono_literals;
+void TfPublisher::setMap(const PointCloud::Ptr cloud){
+  PointCloud::Ptr cloud_1(new PointCloud());
   *cloud_1=*cloud;
   filter_->setInputCloud(cloud_1);
   filter_->setFilterFieldName("z");
   filter_->setFilterLimits(-0.5,2.0);
   filter_->filter(*mapCloud_);
-
+  timeBase_=node_->create_wall_timer(1s,std::bind(&TfPublisher::publishMap,this));
 }
 void TfPublisher::setEigen(){
   normal={0.0,0.0,1.0};
@@ -36,7 +46,7 @@ void TfPublisher::setEigen(){
 void TfPublisher::mapToGrid(){
   for(const auto &point:*mapCloud_){
     Vectorf p(point.x,point.y,point.z);
-    float d = abs(normalHat.dot(p)-normalHat.dot(p0));
+    //float d = abs(normalHat.dot(p)-normalHat.dot(p0));
     float x_uv=u.dot(p-p0);
     float y_uv=v.dot(p-p0);
     //

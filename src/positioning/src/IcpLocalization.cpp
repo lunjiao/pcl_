@@ -5,14 +5,15 @@
 namespace icp_local{
 
 IcpLocalization::IcpLocalization(const rclcpp::NodeOptions &options):Node("icp_localization",options){
-    filter_.setLeafSize(0.01f,0.01f,0.01f);
+    filter_.setLeafSize(0.05f,0.05f,0.05f);
+    mapCloud_=std::make_shared<PointCloud>();
 };
 
 void IcpLocalization::initialize(){
-    imuTracker_=std::make_shared<ImuTracker>();
+    imuTracker_=std::make_shared<ImuTracker>(this->shared_from_this());
     tfPublisher_=std::make_shared<TfPublisher>(this->shared_from_this(),imuTracker_);
     rangeData_=std::make_shared<RangeData>(this->shared_from_this());
-    std::thread icp_worke_thread(icpWorker);
+    std::thread icp_worke_thread(std::bind(&IcpLocalization::icpWorker,this));
     icp_worke_thread.detach();
 }
 
@@ -22,8 +23,8 @@ void IcpLocalization::setMap(PointCloud::Ptr cloud){
     filter_.filter(*mapCloud_);
     icp_.setInputTarget(mapCloud_);
     icp_.setMaximumIterations(maxIterate);
-
-    tfPublisher_->setMap(cloud);
+    //RCLCPP_INFO(this->get_logger(),"66");
+    tfPublisher_->setMap(mapCloud_);
     isMapSet=true;
     
 }
@@ -35,7 +36,7 @@ void IcpLocalization::matchScan(){
     PointCloud::Ptr cloud;
     pcl::fromROSMsg(msg, *cloud);
     //icp
-    Matrix4d M=imuTracker_->getTransform();
+    Matrix4f M=imuTracker_->getTransform();
     icp_.setInputSource(cloud);
     icp_.align(*cloud,M);
     if(!icp_.hasConverged()){

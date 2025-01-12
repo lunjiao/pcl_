@@ -1,4 +1,7 @@
-#pragma once
+#ifndef IMUBUFFERANDREADING_HPP
+#define IMUBUFFERANDREADING_HPP
+
+
 #include<deque>
 #include<iostream>
 #include<Eigen/Core>
@@ -15,16 +18,17 @@ public:
 using Vector = Eigen::Matrix<FloatType, 3, 1>;
 using Quaternion = Eigen::Quaternion<FloatType>;
 
-ImuReading():acc_(Vector::Zero()),angVel_(Vector::Zero()),quaternion_(Quaterniond::Identity()){}
+ImuReading():acc_(Vector::Zero()),angVel_(Vector::Zero()),q_(Quaterniond::Identity()){}
 ImuReading(const Vector&lin,const Vector&ang,const Quaternion&q)
 :acc_(lin),angVel_(ang),q_(q){}
 //
 const Vector& acceleration() const{return acc_;}
 const Vector& angularVelocity() const{return angVel_;}
 const Quaternion& rotation() const{return q_;}
-Vector& acceleration(){return acc_;}
-Vector& angularVelocity(){return angVel_;}
-Quaternion& rotation(){return q_;}
+Vector& acceleration() {return acc_;}
+Vector& angularVelocity() {return angVel_;}
+Quaternion& rotation() {return q_;}
+
 //
 
 private:
@@ -33,6 +37,8 @@ Vector angVel_;//角速度
 Quaternion q_;
 
 };
+using ImuReadingd=ImuReading<double>;
+using ImuReadingf=ImuReading<float>;
 
 
 struct TimeAndImuReading{
@@ -42,15 +48,7 @@ struct TimeAndImuReading{
 
 
 //把ros的imu转成自己的imu
-TimeAndImuReading fromRostoImureading(const sensor_msgs::msg::Imu &imu){
-    Vectord lin{imu.linear_acceleration.x,imu.linear_acceleration.y,imu.linear_acceleration.z};
-    Vectord ang{imu.angular_velocity.x,imu.angular_velocity.y,imu.angular_velocity.z};
-    Quaterniond q{imu.orientation.w,imu.orientation.x,imu.orientation.y,imu.orientation.z};
-    TimeAndImuReading result;
-    result.imu_=ImuReadingd(lin,ang,q);
-    result.time_=imu.header.stamp;
-    return result;
-}
+TimeAndImuReading fromRostoImureading(const sensor_msgs::msg::Imu &imu);
 // //计算两个相邻的imu
 // TimeAndImuReading interpolate(const TimeAndImuReading&start,const TimeAndImuReading&end,const Time& time){
 //     if(time<start.time_||time>end.time_){
@@ -84,26 +82,9 @@ TimeAndImuReading fromRostoImureading(const sensor_msgs::msg::Imu &imu){
 class ImuBuffer{
 public:
 //在插入前检查时间是否正确。插入后检查是否超过最大队列并移除。
-void push(const ImuReadingd&imu,const Time&time){
-    if(!imuDeque.empty()){
-        if(time>imuDeque.back().time_){
-            throw std::runtime_error("ImuBufferAndReading::push,大于最大时间");
-        }
-        if(time<imuDeque.front().time_){
-            throw std::runtime_error("ImuBufferAndReading::push,小于最小时间");
-        }
-    }
-    TimeAndImuReading T;
-    T.imu_=imu,T.time_=time;
-    imuDeque.push_back(T);
-    checkAndRemove();
-};
+void push(const ImuReadingd&imu,const Time&time);
 //检查是否超过最大队列，若超过则移除
-void checkAndRemove(){
-     while(imuDeque.size()>maxDequeSize){
-        imuDeque.pop_front();
-    }
-};
+void checkAndRemove();
 //要么放回与时间相等的imu，要么放回不超过他的最接近的imu
 // ImuReadingd lookup(const Time&time){
 //    if(!isHasTime(time)){
@@ -128,32 +109,18 @@ void checkAndRemove(){
 //     return interpolate(*start,*measurement,time).imu_;
 // };
 //是否有该时间
-bool isHasTime(const Time&time){
-    if(imuDeque.empty()){
-        std::cerr<<"imuDeque为空"<<std::endl;
-        return false;
-    }
-    return time>imuDeque.front().time_&&time<imuDeque.back().time_;
-
-};
+bool isHasTime(const Time&time);
 //是否为空
-bool isEmpty(){
-    return imuDeque.empty();
-};
+bool isEmpty();
 //放回尺寸
-int size(){
-    return imuDeque.size();
-};
+int size();
 //返回最近的TimeAndImuReading
-TimeAndImuReading &latest_measurement(int n=1){
-    if(isEmpty()){
-        throw std::runtime_error("ImuBufferAndReading::last_measurement,队列imuDeque为空");
-    }
-    return *(std::prev(imuDeque.end(),n));
-}
+TimeAndImuReading &latest_measurement(int n=1);
 private:
 std::deque<TimeAndImuReading> imuDeque;//imu的队列
 int maxDequeSize=5000;
 };
 
 }
+
+#endif 

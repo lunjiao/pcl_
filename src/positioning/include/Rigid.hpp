@@ -1,4 +1,6 @@
-#pragma once
+#ifndef RIGID_HPP
+#define RIGID_HPP
+
 
 #include<Eigen/Core>
 #include<Eigen/Geometry>
@@ -43,6 +45,8 @@ bool assert_1(const T&t_1,const T&t_2){
         throw std::runtime_error("assert_1出错");
     }
 }
-
+using Rigid3d=Rigid<double>;
 
 }
+
+#endif

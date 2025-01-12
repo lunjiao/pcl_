@@ -1,4 +1,5 @@
-#pragma once
+#ifndef TYPEDEFINE_HPP
+#define TYPEDEFINE_HPP
 //定义类型，以便简化
 
 #include<pcl/point_cloud.h>
@@ -8,17 +9,15 @@
 #include<Eigen/Dense>//Matrix3d::Identity()
 #include<builtin_interfaces/msg/time.hpp>
 
-#include<Rigid.hpp>
-#include<ImuBufferAndReading.hpp>
 
 namespace icp_local{
 
 using Point=pcl::PointXYZ;
 using PointCloud=pcl::PointCloud<Point>;
 
-using Rigid3d=Rigid<double>;
-using ImuReadingf=ImuReading<float>;
-using ImuReadingd=ImuReading<double>;
+// template<typename FloatType>
+// class ImuReading{};
+
 
 using Vectord=Eigen::Vector3d;
 using Vectorf=Eigen::Vector3f;
@@ -31,23 +30,13 @@ using Matrix4f=Eigen::Matrix4f;
 
 
 using Time=builtin_interfaces::msg::Time;
-bool operator<(const Time&t1,const Time&t2){
-    return t1.nanosec<t2.nanosec;
-}
-bool operator>(const Time&t1,const Time&t2){
-    return t1.nanosec>t2.nanosec;
-}
-bool operator<=(const Time&t1,const Time&t2){
-    return t1.nanosec<=t2.nanosec;
-}
-bool operator>=(const Time&t1,const Time&t2){
-    return t1.nanosec>=t2.nanosec;
-}
-bool operator==(const Time&t1,const Time&t2){
-    return t1.nanosec==t2.nanosec;
-}
-double operator-(const Time&t1,const Time&t2){
-    return t1.nanosec-t2.nanosec;
-}
+bool operator<(const Time&t1,const Time&t2);
+bool operator>(const Time&t1,const Time&t2);
+bool operator<=(const Time&t1,const Time&t2);
+bool operator>=(const Time&t1,const Time&t2);
+bool operator==(const Time&t1,const Time&t2);
+double operator-(const Time&t1,const Time&t2);
 
 }
+
+#endif

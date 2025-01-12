@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ICPLOCALIZATION_HPP
+#define  ICPLOCALIZATION_HPP
 
 #include<rclcpp/rclcpp.hpp>
 #include<pcl/registration/icp.h>
@@ -50,3 +51,4 @@ bool isMapSet=false;
 
 
 }
+#endif 

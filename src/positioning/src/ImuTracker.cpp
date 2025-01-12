@@ -29,18 +29,18 @@ void ImuTracker::imuCallback(const sensor_msgs::msg::Imu&imu){
     TimeAndImuReading imureading=fromRosToImuReading(imu);
     addReading(imureading.time_,imureading.imu_);
 }
-void ImuTracker::addReading(const Time &t,const ImuReadingd&reading){
+void ImuTracker::addReading(const Time &t,ImuReadingd&reading){
     //第一次
     if(tprev_.nanosec==0){
         tprev_=t;
-        Eigen::Vector4d coeffs=reading.imu_.acceleration().coeffs();
+        Vectord coeffs=reading.acceleration();
         gravityFromZ=coeffs[2];//z
     }
     if(t<tprev_){
         throw std::runtime_error("ImuTracker::addReading,时间错误");
     }
     //去重力，z轴摆正
-    reading.imu_.acceleration()=removeGravity(reading.imu_.acceleration(),reading.imu_.rotation());
+    reading.acceleration()=removeGravity(reading.acceleration(),reading.rotation());
     imuBuffer_.push(reading,t);
     //updateOrientationFromLinearAcceleration();
     intergrateImuReading(reading,t);
@@ -64,14 +64,14 @@ void ImuTracker::intergrateImuReading(const ImuReadingd&reading,const Time&t){
     double dt = t - tprev_;
     //角速度处理
     Eigen::Matrix3d B; // 角速度 * 时间 = 角度（表示为反对称矩阵）
-    auto msg=reading.imu_.angularVelocity();
+    auto msg=reading.angularVelocity();
     B << 0, -msg.z() * dt, msg.y() * dt, 
     msg.z() * dt, 0,-msg.x() * dt,
     -msg.y() * dt,msg.x() * dt, 0;
     double sigma = sqrt(pow(msg.x(), 2) + pow(msg.y(), 2) + pow(msg.z(), 2)) * dt;//角度
     integratedOrien_*= (Eigen::Matrix3d::Identity() + (sin(sigma) / sigma) * B - ((1 - cos(sigma)) / pow(sigma, 2)) * B * B);
     //位置
-    Vectord acc_i=reading.imu_.acceleration();//这里应该去重力的
+    Vectord acc_i=reading.acceleration();//这里应该去重力的
     Vectord acc_w = integratedOrien_ * acc_i;
     integratedLinearVelocity_+=dt*acc_w;
     integratedPosition_+=dt*integratedLinearVelocity_;
@@ -93,7 +93,7 @@ Matrix4f ImuTracker::getTransform(){
          2*(x*z - w*y), 2*(y*z + w*x), w*w - x*x - y*y + z*z;
     Matrix4f M=Matrix4f::Identity();
     M.block<3, 3>(0, 0) = R;
-    M.block<3, 1>(0, 3) = integratedPosition_;
+    M.block<3, 1>(0, 3) = integratedPosition_.cast<float>();
     return M;
 }
 
